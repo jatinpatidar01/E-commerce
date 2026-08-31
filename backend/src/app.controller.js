@@ -11,6 +11,10 @@ class AppController {
 }
 
 Controller()(AppController);
-Get()(AppController.prototype, 'healthCheck', Object.getOwnPropertyDescriptor(AppController.prototype, 'healthCheck'));
+Get()(
+  AppController.prototype,
+  'healthCheck',
+  Object.getOwnPropertyDescriptor(AppController.prototype, 'healthCheck'),
+);
 
 module.exports = { AppController };

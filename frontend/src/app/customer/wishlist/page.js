@@ -5,8 +5,6 @@ export default function WishlistPage() {
       <p className="text-gray-500 mt-2">
         Wishlist products will be loaded from the backend.
       </p>
-      
-      
     </section>
   );
 }

@@ -54,3 +54,32 @@ card details
 📦 In Stock
 ❤️ Wishlist
 🛒 Add to Cart
+
+
+INSERT INTO public.users
+(
+    name,
+    email,
+    password,
+    role
+)
+VALUES
+(
+    'Jatin Patidar',
+    'jatin.vendor@gmail.com',
+    '$2b$10$examplehashedpassword111111111111111111111111111',
+    'vendor'
+),
+(
+    'Rahul Sharma',
+    'rahul.vendor@gmail.com',
+    '$2b$10$examplehashedpassword222222222222222222222222222',
+    'vendor'
+),
+(
+    'Aman Verma',
+    'aman.vendor@gmail.com',
+    '$2b$10$examplehashedpassword333333333333333333333333333',
+    'vendor'   
+)
+RETURNING id, name, email, role, created_at;

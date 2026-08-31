@@ -1,9 +1,18 @@
-import { api } from "../lib/api";
-import { persistAuth, clearStoredAuth } from "../lib/auth";
+import api from "@/lib/api";
+
+function normalizeAuthResponse(payload) {
+  const user = payload?.user || payload;
+
+  return {
+    ...payload,
+    user,
+    role: user?.role,
+  };
+}
 
 export async function login(email, password) {
   const cleanedEmail = String(email || "").trim();
-  const cleanedPassword = String(password || "").trim();
+  const cleanedPassword = String(password || "");
 
   if (!cleanedEmail || !cleanedPassword) {
     throw new Error("Email and password are required");
@@ -14,84 +23,70 @@ export async function login(email, password) {
     password: cleanedPassword,
   });
 
-  const authData =
-    payload?.data ||
-    payload?.result ||
-    payload ||
-    {};
-
-  const savedAuth = persistAuth(authData);
-
-  const normalizedRole =
-    authData.role ||
-    authData.user?.role ||
-    authData.profile?.role ||
-    authData.data?.user?.role ||
-    authData.userRole ||
-    savedAuth?.role ||
-    "customer";
-
-  return {
-    ...payload,
-
-    user:
-      authData.user ||
-      authData.profile ||
-      authData.data?.user ||
-      null,
-
-    role: normalizedRole,
-
-    accessToken:
-      savedAuth?.accessToken ||
-      authData.accessToken ||
-      authData.access_token ||
-      authData.token?.accessToken ||
-      authData.token?.access_token ||
-      null,
-
-    refreshToken:
-      savedAuth?.refreshToken ||
-      authData.refreshToken ||
-      authData.refresh_token ||
-      authData.token?.refreshToken ||
-      authData.token?.refresh_token ||
-      null,
-  };
+  return normalizeAuthResponse(payload);
 }
 
-export function logout() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("user");
+export async function sendOtp(email) {
+  const cleanedEmail = String(email || "").trim().toLowerCase();
+
+  if (!cleanedEmail) {
+    throw new Error("Email is required");
   }
-  clearStoredAuth();
+
+  return api.post("/auth/otp", {
+    email: cleanedEmail,
+  });
 }
-export async function register(name, email, password) {
+
+export async function register(
+  name,
+  email,
+  password,
+  role = "customer",
+  otp = ""
+) {
   const cleanedName = String(name || "").trim();
-  const cleanedEmail = String(email || "").trim();
-  const cleanedPassword = String(password || "").trim();
+  const cleanedEmail = String(email || "").trim().toLowerCase();
+  const cleanedPassword = String(password || "");
+  const cleanedRole = String(role || "customer").trim().toLowerCase();
+  const cleanedOtp = String(otp || "").trim();
 
   if (!cleanedName || !cleanedEmail || !cleanedPassword) {
     throw new Error("Name, email and password are required");
   }
-  console.log("Registering user with:", { name: cleanedName, email: cleanedEmail, password: cleanedPassword });
-  const payload = await api.post("/auth/register", {
+
+  if (!cleanedOtp) {
+    throw new Error("OTP verification code is required");
+  }
+
+  const allowedRoles = ["customer", "vendor"];
+
+  if (!allowedRoles.includes(cleanedRole)) {
+    throw new Error("Invalid role");
+  }
+
+  return api.post("/auth/register", {
     name: cleanedName,
     email: cleanedEmail,
     password: cleanedPassword,
+    role: cleanedRole,
+    otp: cleanedOtp,
   });
-
-  return payload;
 }
-export function getRoleFromToken() {
-  if (typeof window === "undefined") {
+
+export async function getCurrentUser() {
+  try {
+    const payload = await api.get("/auth/me");
+    return payload?.user || payload;
+  } catch {
     return null;
   }
+}
 
-  const role = localStorage.getItem("role");
+export async function refreshSession() {
+  return api.post("/auth/refresh");
+}
 
-  return role ? String(role).toLowerCase() : null;
+export async function logout() {
+  return api.post("/auth/logout");
 }
