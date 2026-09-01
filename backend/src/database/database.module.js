@@ -1,6 +1,5 @@
-const { Module } = require('@nestjs/common');
-
-const { DatabaseService } = require('./database.service');
+const { Module } = require("@nestjs/common");
+const { DatabaseService } = require("./database.service");
 
 class DatabaseModule {}
 

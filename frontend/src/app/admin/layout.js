@@ -72,12 +72,6 @@ export default function AdminLayout({ children }) {
             You are currently signed in as <strong>{user.name} ({user.email})</strong> with role <strong>{user.role}</strong>. You do not have permissions to access the Admin Control Center.
           </p>
           <div className="pt-2 space-y-2">
-            <Link
-              href="/customer"
-              className="block w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition"
-            >
-              🛍️ Return to Customer Store
-            </Link>
             <button
               type="button"
               onClick={handleLogout}
@@ -125,15 +119,6 @@ export default function AdminLayout({ children }) {
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-slate-800 space-y-2">
-          <Link
-            href="/customer"
-            className="block text-center text-xs font-semibold text-slate-300 hover:text-white py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition"
-          >
-            🛍️ Open Customer Store
-          </Link>
-        </div>
       </aside>
 
       {/* Main Content */}

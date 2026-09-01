@@ -131,7 +131,7 @@ class VendorService {
       `
       SELECT
         COUNT(*)::INTEGER AS total_products,
-        COUNT(CASE WHEN approval_status = 'approved' THEN 1 END)::INTEGER AS approved_products,
+        COUNT(CASE WHEN approval_status = 'approved' AND is_active = true THEN 1 END)::INTEGER AS approved_products,
         COUNT(CASE WHEN approval_status = 'pending' THEN 1 END)::INTEGER AS pending_products,
         COUNT(CASE WHEN approval_status = 'rejected' THEN 1 END)::INTEGER AS rejected_products,
         COUNT(CASE WHEN is_active = true THEN 1 END)::INTEGER AS active_products
@@ -162,9 +162,17 @@ class VendorService {
       [vendor.id],
     );
 
+    const statistics = statsResult.rows[0];
+
     return {
       vendor,
-      statistics: statsResult.rows[0],
+      statistics: {
+        totalProducts: statistics.total_products,
+        approvedProducts: statistics.approved_products,
+        pendingProducts: statistics.pending_products,
+        rejectedProducts: statistics.rejected_products,
+        activeProducts: statistics.active_products,
+      },
       recentProducts: recentResult.rows,
     };
   }

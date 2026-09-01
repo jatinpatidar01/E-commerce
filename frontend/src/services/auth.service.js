@@ -83,10 +83,6 @@ export async function getCurrentUser() {
   }
 }
 
-export async function refreshSession() {
-  return api.post("/auth/refresh");
-}
-
 export async function logout() {
   return api.post("/auth/logout");
 }

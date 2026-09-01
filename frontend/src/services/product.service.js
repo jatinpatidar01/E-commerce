@@ -52,23 +52,6 @@ const productService = {
   },
 
   // =========================
-  // GET VENDOR PRODUCTS
-  // =========================
-
-  async getVendorProducts() {
-    try {
-      return await api.get(
-        "/products/vendor"
-      );
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to load vendor products."
-      );
-    }
-  },
-
-  // =========================
   // GET SINGLE PRODUCT
   // =========================
 
@@ -87,100 +70,6 @@ const productService = {
       handleError(
         error,
         "Failed to load product."
-      );
-    }
-  },
-
-  // =========================
-  // CREATE PRODUCT
-  // =========================
-
-  async createProduct(data) {
-    try {
-      return await api.post(
-        "/products",
-        data
-      );
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to create product."
-      );
-    }
-  },
-
-  // =========================
-  // UPDATE PRODUCT
-  // =========================
-
-  async updateProduct(id, data) {
-    try {
-      if (!id) {
-        throw new Error(
-          "Product ID is required."
-        );
-      }
-
-      return await api.patch(
-        `/products/${id}`,
-        data
-      );
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to update product."
-      );
-    }
-  },
-
-  // =========================
-  // DELETE PRODUCT
-  // =========================
-
-  async deleteProduct(id) {
-    try {
-      if (!id) {
-        throw new Error(
-          "Product ID is required."
-        );
-      }
-
-      return await api.delete(
-        `/products/${id}`
-      );
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to delete product."
-      );
-    }
-  },
-
-  // =========================
-  // ACTIVE / INACTIVE
-  // =========================
-
-  async toggleProductStatus(
-    id,
-    isActive
-  ) {
-    try {
-      if (!id) {
-        throw new Error(
-          "Product ID is required."
-        );
-      }
-
-      return await api.patch(
-        `/products/${id}/status`,
-        {
-          is_active: isActive,
-        }
-      );
-    } catch (error) {
-      handleError(
-        error,
-        "Failed to update product status."
       );
     }
   },

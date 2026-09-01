@@ -43,7 +43,11 @@ function extractUserId(req, authService) {
   if (token && authService) {
     try {
       const decoded = authService.validateAccessToken(token);
-      return Number(decoded.sub) || decoded.sub;
+      req.user = {
+        id: Number(decoded.sub) || decoded.sub,
+        role: decoded.role,
+      };
+      return req.user.id;
     } catch {}
   }
 
@@ -72,7 +76,9 @@ class ProductsController {
     const userId = extractUserId(req, this.authService);
 
     if (!userId) {
-      throw new UnauthorizedException('Please login as a vendor to view products');
+      throw new UnauthorizedException(
+        'Please login as a vendor to view products',
+      );
     }
 
     return this.productsService.getVendorProducts(userId);
@@ -88,7 +94,9 @@ class ProductsController {
     }
 
     const userId = extractUserId(req, this.authService);
-    return this.productsService.getProduct(id, userId);
+    const vendorUserId = req?.user?.role === 'vendor' ? userId : null;
+
+    return this.productsService.getProduct(id, vendorUserId);
   }
 
   // =========================================
@@ -107,7 +115,9 @@ class ProductsController {
     const userId = extractUserId(req, this.authService);
 
     if (!userId) {
-      throw new UnauthorizedException('Please login as a vendor to create products');
+      throw new UnauthorizedException(
+        'Please login as a vendor to create products',
+      );
     }
 
     return this.productsService.createProduct(userId, {
@@ -127,7 +137,9 @@ class ProductsController {
     const userId = extractUserId(req, this.authService);
 
     if (!userId) {
-      throw new UnauthorizedException('Please login as a vendor to update products');
+      throw new UnauthorizedException(
+        'Please login as a vendor to update products',
+      );
     }
 
     if (!id) {
@@ -149,7 +161,9 @@ class ProductsController {
     const userId = extractUserId(req, this.authService);
 
     if (!userId) {
-      throw new UnauthorizedException('Please login as a vendor to delete products');
+      throw new UnauthorizedException(
+        'Please login as a vendor to delete products',
+      );
     }
 
     if (!id) {
@@ -167,7 +181,9 @@ class ProductsController {
     const userId = extractUserId(req, this.authService);
 
     if (!userId) {
-      throw new UnauthorizedException('Please login as a vendor to update status');
+      throw new UnauthorizedException(
+        'Please login as a vendor to update status',
+      );
     }
 
     if (!id) {
@@ -178,11 +194,7 @@ class ProductsController {
       throw new BadRequestException('is_active must be true or false');
     }
 
-    return this.productsService.toggleProductStatus(
-      userId,
-      id,
-      body.is_active,
-    );
+    return this.productsService.toggleProductStatus(userId, id, body.is_active);
   }
 
   // =========================================
@@ -201,7 +213,11 @@ class ProductsController {
     }
 
     const adminUserId = extractUserId(req, this.authService);
-    return this.productsService.updateProductApproval(id, approval_status, adminUserId);
+    return this.productsService.updateProductApproval(
+      id,
+      approval_status,
+      adminUserId,
+    );
   }
 }
 
@@ -245,10 +261,7 @@ Req()(ProductsController.prototype, 'getVendorProducts', 0);
 Get(':id')(
   ProductsController.prototype,
   'getProduct',
-  Object.getOwnPropertyDescriptor(
-    ProductsController.prototype,
-    'getProduct',
-  ),
+  Object.getOwnPropertyDescriptor(ProductsController.prototype, 'getProduct'),
 );
 Param('id')(ProductsController.prototype, 'getProduct', 0);
 Req()(ProductsController.prototype, 'getProduct', 1);

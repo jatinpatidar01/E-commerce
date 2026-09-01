@@ -1,3 +1,5 @@
+
+
 import api from "@/lib/api";
 
 const handleError = (error, defaultMessage) => {
@@ -6,9 +8,7 @@ const handleError = (error, defaultMessage) => {
 };
 
 const orderService = {
-  // =========================
-  // CREATE ORDER (CHECKOUT)
-  // =========================
+  // Create order
   async checkout(orderData = {}) {
     try {
       return await api.post("/orders", orderData);
@@ -17,9 +17,7 @@ const orderService = {
     }
   },
 
-  // =========================
-  // GET CUSTOMER ORDERS
-  // =========================
+  // Get customer orders
   async getCustomerOrders() {
     try {
       return await api.get("/orders");
@@ -28,9 +26,7 @@ const orderService = {
     }
   },
 
-  // =========================
-  // GET VENDOR ORDERS
-  // =========================
+  // Get vendor orders
   async getVendorOrders() {
     try {
       return await api.get("/orders/vendor");
@@ -39,9 +35,7 @@ const orderService = {
     }
   },
 
-  // =========================
-  // GET ADMIN ALL ORDERS
-  // =========================
+  // Get admin orders
   async getAdminOrders() {
     try {
       return await api.get("/orders/admin");
@@ -50,14 +44,20 @@ const orderService = {
     }
   },
 
-  // =========================
-  // UPDATE ORDER STATUS
-  // =========================
+  // Update order status
   async updateOrderStatus(orderId, status) {
     try {
-      if (!orderId) throw new Error("Order ID is required.");
-      if (!status) throw new Error("Status is required.");
-      return await api.patch(`/orders/${orderId}/status`, { status });
+      if (!orderId) {
+        throw new Error("Order ID is required.");
+      }
+
+      if (!status) {
+        throw new Error("Status is required.");
+      }
+
+      return await api.patch(`/orders/${orderId}/status`, {
+        status,
+      });
     } catch (error) {
       handleError(error, "Failed to update order status.");
     }
@@ -65,3 +65,71 @@ const orderService = {
 };
 
 export default orderService;
+
+// import api from "@/hooks/lib/api";
+
+// const handleError = (error, defaultMessage) => {
+//   console.error(defaultMessage, error);
+//   throw new Error(error?.message || defaultMessage);
+// };
+
+// const orderService = {
+//   // =========================
+//   // CREATE ORDER (CHECKOUT)
+//   // =========================
+//   async checkout(orderData = {}) {
+//     try {
+//       return await api.post("/orders", orderData);
+//     } catch (error) {
+//       handleError(error, "Failed to place order.");
+//     }
+//   },
+
+//   // =========================
+//   // GET CUSTOMER ORDERS
+//   // =========================
+//   async getCustomerOrders() {
+//     try {
+//       return await api.get("/orders");
+//     } catch (error) {
+//       handleError(error, "Failed to load orders.");
+//     }
+//   },
+
+//   // =========================
+//   // GET VENDOR ORDERS
+//   // =========================
+//   async getVendorOrders() {
+//     try {
+//       return await api.get("/orders/vendor");
+//     } catch (error) {
+//       handleError(error, "Failed to load vendor orders.");
+//     }
+//   },
+
+//   // =========================
+//   // GET ADMIN ALL ORDERS
+//   // =========================
+//   async getAdminOrders() {
+//     try {
+//       return await api.get("/orders/admin");
+//     } catch (error) {
+//       handleError(error, "Failed to load all platform orders.");
+//     }
+//   },
+
+//   // =========================
+//   // UPDATE ORDER STATUS
+//   // =========================
+//   async updateOrderStatus(orderId, status) {
+//     try {
+//       if (!orderId) throw new Error("Order ID is required.");
+//       if (!status) throw new Error("Status is required.");
+//       return await api.patch(`/orders/${orderId}/status`, { status });
+//     } catch (error) {
+//       handleError(error, "Failed to update order status.");
+//     }
+//   },
+// };
+
+// export default orderService;

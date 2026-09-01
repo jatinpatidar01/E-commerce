@@ -1,6 +1,6 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
@@ -41,18 +41,19 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refreshCart();
+  refreshCart();
 
-    const handleAuthChange = () => {
-      refreshCart();
-    };
+  const handleAuthChange = () => {
+    setCart(emptyCart);
+    setCartBadge(0);
+  };
 
-    window.addEventListener("auth:logout", handleAuthChange);
+  window.addEventListener("auth:logout", handleAuthChange);
 
-    return () => {
-      window.removeEventListener("auth:logout", handleAuthChange);
-    };
-  }, [refreshCart]);
+  return () => {
+    window.removeEventListener("auth:logout", handleAuthChange);
+  };
+}, [refreshCart]);
 
   const addToCart = async (productId, quantity = 1) => {
     setLoading(true);

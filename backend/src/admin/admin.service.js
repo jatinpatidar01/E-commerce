@@ -2,9 +2,9 @@ const {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } = require('@nestjs/common');
 const { DatabaseService } = require('../database/database.service');
-const nodemailer = require('nodemailer');
 
 class AdminService {
   constructor(databaseService) {
@@ -143,6 +143,92 @@ class AdminService {
     );
 
     return result.rows;
+  }
+
+  async getCustomers() {
+    const result = await this.databaseService.query(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.created_at,
+        COUNT(o.id)::INTEGER AS orders_count,
+        COALESCE(SUM(o.total_amount), 0)::NUMERIC AS total_spent
+      FROM public.users u
+      LEFT JOIN public.orders o ON o.customer_id = u.id
+      WHERE u.role = 'customer'
+      GROUP BY u.id, u.name, u.email, u.role, u.created_at
+      ORDER BY u.created_at DESC
+    `);
+
+    return result.rows;
+  }
+
+  async getVendors() {
+    const result = await this.databaseService.query(`
+      SELECT
+        u.id AS user_id,
+        u.name,
+        u.email,
+        u.role,
+        u.created_at,
+        v.id AS vendor_id,
+        v.business_name,
+        COUNT(p.id)::INTEGER AS products_count,
+        COUNT(CASE WHEN p.approval_status = 'approved' THEN 1 END)::INTEGER AS approved_products
+      FROM public.users u
+      INNER JOIN public.vendors v ON v.user_id = u.id
+      LEFT JOIN public.products p ON p.vendor_id = v.id
+      WHERE u.role = 'vendor'
+      GROUP BY u.id, u.name, u.email, u.role, u.created_at, v.id, v.business_name
+      ORDER BY u.created_at DESC
+    `);
+
+    return result.rows;
+  }
+
+  async deleteCustomer(userId) {
+    const id = Number(userId);
+    const ordersResult = await this.databaseService.query(
+      `SELECT COUNT(*)::INTEGER AS total FROM public.orders WHERE customer_id = $1`,
+      [id],
+    );
+
+    if (ordersResult.rows[0]?.total > 0) {
+      throw new ConflictException(
+        'This customer cannot be deleted because their order history must be preserved.',
+      );
+    }
+
+    await this.databaseService.query(
+      `DELETE FROM public.cart_items WHERE user_id = $1`,
+      [id],
+    );
+
+    const result = await this.databaseService.query(
+      `DELETE FROM public.users WHERE id = $1 AND role = 'customer' RETURNING id`,
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return { message: 'Customer account deleted successfully' };
+  }
+
+  async deleteVendor(userId) {
+    const result = await this.databaseService.query(
+      `DELETE FROM public.users WHERE id = $1 AND role = 'vendor' RETURNING id`,
+      [Number(userId)],
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundException('Vendor not found');
+    }
+
+    return { message: 'Vendor account deleted successfully' };
   }
 
   // =========================================

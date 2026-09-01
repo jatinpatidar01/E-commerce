@@ -26,7 +26,7 @@ export default function VendorDashboard() {
           vendorService.getDashboard(),
           vendorService.getProducts(),
         ]);
-
+        
         if (dashboardRes?.statistics) {
           setStats(dashboardRes.statistics);
         }
@@ -85,21 +85,21 @@ export default function VendorDashboard() {
             <div className="p-5 bg-white border rounded-xl shadow-sm">
               <p className="text-sm font-medium text-gray-500">Total Products</p>
               <p className="mt-2 text-3xl font-bold text-gray-900">
-                {stats.totalProducts}
+                {stats.totalProducts ?? 0}
               </p>
             </div>
 
             <div className="p-5 bg-white border border-green-200 rounded-xl shadow-sm bg-green-50/20">
               <p className="text-sm font-medium text-green-700">Approved & Live</p>
               <p className="mt-2 text-3xl font-bold text-green-700">
-                {stats.approvedProducts}
+                {stats.approvedProducts ?? 0}
               </p>
             </div>
 
             <div className="p-5 bg-white border border-yellow-200 rounded-xl shadow-sm bg-yellow-50/20">
               <p className="text-sm font-medium text-yellow-700">Pending Review</p>
               <p className="mt-2 text-3xl font-bold text-yellow-700">
-                {stats.pendingProducts}
+                { stats.pendingProducts ?? 0}
               </p>
             </div>
 

@@ -78,6 +78,8 @@ const vendorService = {
   async getProduct(id) {
     try {
       if (!id) {
+        console.log("Product ID is required.");
+
         throw new Error("Product ID is required.");
       }
       return await api.get(

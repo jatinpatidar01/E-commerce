@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import productService from "@/services/product.service";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/provider/CartContext";
 
 export default function CustomerProductDetailPage() {
   const params = useParams();
@@ -19,6 +19,7 @@ export default function CustomerProductDetailPage() {
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
+    // console.log("Loading product details for ID:", productId);
     async function loadProduct() {
       try {
         setLoading(true);

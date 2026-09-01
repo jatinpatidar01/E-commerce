@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, logout } from '@/services/auth.service';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/provider/CartContext';
 
 export default function Navbar() {
   const router = useRouter();

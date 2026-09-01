@@ -15,6 +15,38 @@ const adminService = {
     }
   },
 
+  async getCustomers() {
+    try {
+      return await api.get("/admin/customers");
+    } catch (error) {
+      handleError(error, "Failed to load customers.");
+    }
+  },
+
+  async getVendors() {
+    try {
+      return await api.get("/admin/vendors");
+    } catch (error) {
+      handleError(error, "Failed to load vendors.");
+    }
+  },
+
+  async deleteCustomer(customerId) {
+    try {
+      return await api.delete(`/admin/customers/${customerId}`);
+    } catch (error) {
+      handleError(error, "Failed to delete customer.");
+    }
+  },
+
+  async deleteVendor(vendorUserId) {
+    try {
+      return await api.delete(`/admin/vendors/${vendorUserId}`);
+    } catch (error) {
+      handleError(error, "Failed to delete vendor.");
+    }
+  },
+
 
   async getProducts(params = {}) {
     try {

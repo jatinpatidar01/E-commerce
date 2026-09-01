@@ -34,7 +34,6 @@ class AuthController {
   // =========================
 
   getOtp(query, body) {
-    // console.log("get otp function ")
     const email = query?.email || body?.email;
 
     if (!email) {

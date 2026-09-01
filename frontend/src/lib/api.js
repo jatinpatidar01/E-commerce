@@ -101,14 +101,6 @@ const api = {
     });
   },
 
-  put(endpoint, body, options = {}) {
-    return request(endpoint, {
-      ...options,
-      method: "PUT",
-      body,
-    });
-  },
-
   patch(endpoint, body, options = {}) {
     return request(endpoint, {
       ...options,

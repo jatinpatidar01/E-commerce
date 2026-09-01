@@ -72,12 +72,6 @@ export default function VendorLayout({ children }) {
             You are currently logged in as a <strong>Customer ({user.email})</strong>. The Vendor Portal is reserved exclusively for registered vendors.
           </p>
           <div className="pt-2 space-y-2">
-            <Link
-              href="/customer"
-              className="block w-full py-3 bg-[#5c4ce1] hover:bg-[#4a3bc7] text-white text-xs font-bold rounded-xl shadow-md transition"
-            >
-              🛍️ Return to Customer Store
-            </Link>
             <button
               type="button"
               onClick={handleLogout}
@@ -122,15 +116,6 @@ export default function VendorLayout({ children }) {
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t space-y-3">
-          <Link
-            href="/customer"
-            className="block text-center text-xs font-semibold text-gray-600 hover:text-[#5c4ce1] py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-          >
-            🛍️ Visit Customer Store
-          </Link>
-        </div>
       </aside>
 
       {/* Main Content Area */}

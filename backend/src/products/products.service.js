@@ -1,4 +1,9 @@
-const { Injectable, NotFoundException, BadRequestException } = require('@nestjs/common');
+const {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} = require('@nestjs/common');
 
 const { DatabaseService } = require('../database/database.service');
 
@@ -7,9 +12,7 @@ class ProductsService {
     this.databaseService = databaseService;
   }
 
-
   // GET PUBLIC PRODUCTS (FOR CUSTOMERS)
-
 
   async getPublicProducts(query = {}) {
     const page = Math.max(1, parseInt(query.page, 10) || 1);
@@ -18,7 +21,7 @@ class ProductsService {
 
     const { category, category_id, search, minPrice, maxPrice, sort } = query;
 
-    const conditions = ["p.is_active = true", "p.approval_status = 'approved'"];
+    const conditions = ['p.is_active = true', "p.approval_status = 'approved'"];
     const params = [];
     let paramIndex = 1;
 
@@ -36,7 +39,9 @@ class ProductsService {
     }
 
     if (search && search.trim()) {
-      conditions.push(`(p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`);
+      conditions.push(
+        `(p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`,
+      );
       params.push(`%${search.trim()}%`);
       paramIndex++;
     }
@@ -257,9 +262,7 @@ class ProductsService {
     return result.rows[0];
   }
 
-
   // CREATE PRODUCT
-
 
   async createProduct(userId, data) {
     const vendorId = await this.getVendorId(userId);
@@ -298,8 +301,6 @@ class ProductsService {
     return result.rows[0];
   }
 
-
-
   async updateProduct(userId, productId, data) {
     const vendorId = await this.getVendorId(userId);
 
@@ -337,7 +338,6 @@ class ProductsService {
     return result.rows[0];
   }
 
-
   // DELETE PRODUCT
 
   async deleteProduct(userId, productId) {
@@ -360,10 +360,8 @@ class ProductsService {
     return {
       message: 'Product deleted successfully',
     };
-
   }
   // ACTIVATE / DEACTIVATE
-
 
   async toggleProductStatus(userId, productId, isActive) {
     const vendorId = await this.getVendorId(userId);
@@ -390,10 +388,11 @@ class ProductsService {
 
   // ADMIN: APPROVE / REJECT PRODUCT
 
-
   async updateProductApproval(productId, status, adminUserId) {
     if (!['approved', 'rejected', 'pending'].includes(status)) {
-      throw new BadRequestException("Status must be 'approved', 'rejected', or 'pending'");
+      throw new BadRequestException(
+        "Status must be 'approved', 'rejected', or 'pending'",
+      );
     }
 
     const approvedAt = status === 'approved' ? new Date() : null;
@@ -421,7 +420,6 @@ class ProductsService {
     return result.rows[0];
   }
 }
-
 
 Reflect.defineMetadata('design:paramtypes', [DatabaseService], ProductsService);
 

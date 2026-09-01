@@ -9,7 +9,6 @@ useEffect(() => {
   async function loadProfile() {
     try {
       const data = await vendorService.getProfile();
-    //  console.log(data)
       setProfile(data?.vendor || data);
     } catch (error) {
       console.error("Failed to load profile:", error);

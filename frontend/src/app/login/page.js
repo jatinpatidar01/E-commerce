@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { login } from "../../services/auth.service";
 
 const ROLE_REDIRECTS = {
@@ -12,6 +13,7 @@ const ROLE_REDIRECTS = {
 };
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,8 +31,8 @@ export default function LoginPage() {
       const userRole = response.user?.role;
       const redirectPath = ROLE_REDIRECTS[userRole] || "/customer";
 
-      // console.log("Login successful, redirecting to:", redirectPath);
-      window.location.href = redirectPath;
+      // window.location.href = redirectPath;
+      router.push(redirectPath);
     } catch (loginError) {
       console.error("Login Error:", loginError);
       setError(

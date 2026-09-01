@@ -1,6 +1,7 @@
 const {
   Body,
   BadRequestException,
+  ForbiddenException,
   Controller,
   Get,
   Patch,
@@ -14,6 +15,12 @@ const {
 const { AdminService } = require('./admin.service');
 const { JwtAuthGuard } = require('../auth/guards/jwt-auth.guard');
 
+function requireAdmin(req) {
+  if (req.user?.role !== 'superadmin') {
+    throw new ForbiddenException('Superadmin access is required');
+  }
+}
+
 class AdminController {
   constructor(adminService) {
     this.adminService = adminService;
@@ -25,6 +32,36 @@ class AdminController {
 
   getDashboard() {
     return this.adminService.getDashboard();
+  }
+
+  getCustomers(req) {
+    requireAdmin(req);
+    return this.adminService.getCustomers();
+  }
+
+  getVendors(req) {
+    requireAdmin(req);
+    return this.adminService.getVendors();
+  }
+
+  deleteCustomer(id, req) {
+    requireAdmin(req);
+
+    if (Number(id) === Number(req.user.id)) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    return this.adminService.deleteCustomer(id);
+  }
+
+  deleteVendor(id, req) {
+    requireAdmin(req);
+
+    if (Number(id) === Number(req.user.id)) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    return this.adminService.deleteVendor(id);
   }
 
   // =========================================
@@ -96,6 +133,36 @@ Get('dashboard')(
   'getDashboard',
   Object.getOwnPropertyDescriptor(AdminController.prototype, 'getDashboard'),
 );
+
+Get('customers')(
+  AdminController.prototype,
+  'getCustomers',
+  Object.getOwnPropertyDescriptor(AdminController.prototype, 'getCustomers'),
+);
+Req()(AdminController.prototype, 'getCustomers', 0);
+
+Get('vendors')(
+  AdminController.prototype,
+  'getVendors',
+  Object.getOwnPropertyDescriptor(AdminController.prototype, 'getVendors'),
+);
+Req()(AdminController.prototype, 'getVendors', 0);
+
+Delete('customers/:id')(
+  AdminController.prototype,
+  'deleteCustomer',
+  Object.getOwnPropertyDescriptor(AdminController.prototype, 'deleteCustomer'),
+);
+Param('id')(AdminController.prototype, 'deleteCustomer', 0);
+Req()(AdminController.prototype, 'deleteCustomer', 1);
+
+Delete('vendors/:id')(
+  AdminController.prototype,
+  'deleteVendor',
+  Object.getOwnPropertyDescriptor(AdminController.prototype, 'deleteVendor'),
+);
+Param('id')(AdminController.prototype, 'deleteVendor', 0);
+Req()(AdminController.prototype, 'deleteVendor', 1);
 
 // GET /admin/products
 Get('products')(

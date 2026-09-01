@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/context/CartContext";
-
+import { useCart } from "@/provider/CartContext";
+import { useRouter } from "next/navigation";
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
 
   const [wishlisted, setWishlisted] = useState(false);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
-
+const router = useRouter();
   const handleWishlist = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -29,7 +29,7 @@ export default function ProductCard({ product }) {
       const result = await addToCart(product.id, 1);
 
       if (result?.requiresLogin) {
-        alert(result.message || "Please login to add items to cart.");
+        router.push("/login");  
         return;
       }
 
