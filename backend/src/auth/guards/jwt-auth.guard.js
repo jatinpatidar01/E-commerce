@@ -41,7 +41,11 @@ class JwtAuthGuard {
     try {
       const decoded = this.authService.validateAccessToken(token);
       request.user = {
-        id: Number(decoded.sub) || (decoded.sub !== undefined ? decoded.sub : Number(decoded.id) || decoded.id),
+        id:
+          Number(decoded.sub) ||
+          (decoded.sub !== undefined
+            ? decoded.sub
+            : Number(decoded.id) || decoded.id),
         sub: decoded.sub,
         email: decoded.email,
         role: decoded.role,

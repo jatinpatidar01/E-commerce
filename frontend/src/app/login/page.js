@@ -31,7 +31,7 @@ export default function LoginPage() {
       const userRole = response.user?.role;
       const redirectPath = ROLE_REDIRECTS[userRole] || "/customer";
 
-      // window.location.href = redirectPath;
+      window.dispatchEvent(new Event("auth:login"));
       router.push(redirectPath);
     } catch (loginError) {
       console.error("Login Error:", loginError);
@@ -104,7 +104,7 @@ export default function LoginPage() {
 
         <div className="mt-6 pt-4 border-t border-slate-100 text-center">
           <p className="text-xs text-slate-500">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/register"
               className="font-bold text-blue-600 hover:underline"

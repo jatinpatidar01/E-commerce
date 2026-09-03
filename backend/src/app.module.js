@@ -10,6 +10,9 @@ const { CartModule } = require('./cart/cart.module');
 const { OrdersModule } = require('./orders/orders.module');
 const { DatabaseModule } = require('./database/database.module');
 const { AppController } = require('./app.controller');
+const { PaymentsModule} = require('./payments/payment.module');
+
+
 class AppModule {}
 
 Module({
@@ -24,6 +27,8 @@ Module({
     CartModule,
     OrdersModule,
     DatabaseModule,
+    PaymentsModule,
+
   ],
 })(AppModule);
 

@@ -180,9 +180,10 @@ class AuthService {
       }
 
       // Delete used OTP
-      await this.databaseService.query(`DELETE FROM public.otps WHERE id = $1`, [
-        latestOtp.id,
-      ]);
+      await this.databaseService.query(
+        `DELETE FROM public.otps WHERE id = $1`,
+        [latestOtp.id],
+      );
 
       const existingUserResult = await this.databaseService.query(
         `

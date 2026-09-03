@@ -39,7 +39,11 @@ class CategoriesService {
   }
 }
 
-Reflect.defineMetadata('design:paramtypes', [DatabaseService], CategoriesService);
+Reflect.defineMetadata(
+  'design:paramtypes',
+  [DatabaseService],
+  CategoriesService,
+);
 Injectable()(CategoriesService);
 
 module.exports = { CategoriesService };

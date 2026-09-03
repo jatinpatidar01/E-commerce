@@ -4,10 +4,11 @@ const {
   NotFoundException,
 } = require('@nestjs/common');
 const { DatabaseService } = require('../database/database.service');
-
+const { PaymentsService } = require('../payments/payment.service');
 class OrdersService {
   constructor(databaseService) {
     this.databaseService = databaseService;
+    this.paymentsService = new PaymentsService();
   }
 
   // =========================================
@@ -57,7 +58,7 @@ class OrdersService {
           LEFT JOIN public.vendors v ON v.id = p.vendor_id
           WHERE p.id = $1 LIMIT 1
           `,
-          [item.productId || item.product_id]
+          [item.productId || item.product_id],
         );
         if (prodRes.rows.length > 0) {
           orderItems.push({
@@ -69,22 +70,28 @@ class OrdersService {
     }
 
     if (orderItems.length === 0) {
-      throw new BadRequestException('Your cart is empty. Please add items to checkout.');
+      throw new BadRequestException(
+        'Your cart is empty. Please add items to checkout.',
+      );
     }
 
     // Verify availability and stock
     for (const item of orderItems) {
       if (!item.is_active || item.approval_status !== 'approved') {
-        throw new BadRequestException(`Product "${item.product_name}" is currently unavailable.`);
+        throw new BadRequestException(
+          `Product "${item.product_name}" is currently unavailable.`,
+        );
       }
       if (item.stock < item.quantity) {
-        throw new BadRequestException(`Insufficient stock for "${item.product_name}". Only ${item.stock} available.`);
+        throw new BadRequestException(
+          `Insufficient stock for "${item.product_name}". Only ${item.stock} available.`,
+        );
       }
     }
 
     const createdOrders = [];
     let grandTotal = 0;
-
+    let amount = 0;
     // Create order records preserving snapshot details
     for (const item of orderItems) {
       const qty = item.quantity;
@@ -120,22 +127,35 @@ class OrdersService {
           unitPrice,
           qty,
           shipping_address || 'Standard Delivery Address',
-        ]
+        ],
       );
-
+      //  console.log('Order created:', orderRes.rows[0]);
+      //  console.log('Order item details:',  qty, unitPrice, totalAmount);
+      // const totalAmount = unitPrice;
+      amount = amount +unitPrice * 100; 
+      amount= 100;
+      // Convert to paise for Razorpay
       // Decrement product stock
+      // console.log('Creating Razorpay order for amount:', amount);
+
       await this.databaseService.query(
         `UPDATE public.products SET stock = GREATEST(0, stock - $1) WHERE id = $2`,
-        [qty, item.product_id]
+        [qty, item.product_id],
       );
 
       createdOrders.push(orderRes.rows[0]);
     }
+    console.log('Total amount for Razorpay order:', amount);
+   const razorpayOrder = await this.paymentsService.createOrder(amount);
 
     // Clear customer cart
-    await this.databaseService.query(`DELETE FROM public.cart_items WHERE user_id = $1`, [customerId]);
+    await this.databaseService.query(
+      `DELETE FROM public.cart_items WHERE user_id = $1`,
+      [customerId],
+    );
 
     return {
+      razorpayOrder,
       message: 'Order placed successfully',
       orders: createdOrders,
       totalAmount: grandTotal,
@@ -160,7 +180,7 @@ class OrdersService {
       WHERE o.customer_id = $1
       ORDER BY o.created_at DESC
       `,
-      [customerId]
+      [customerId],
     );
 
     return result.rows;
@@ -175,7 +195,7 @@ class OrdersService {
     // Get vendor ID
     const vRes = await this.databaseService.query(
       `SELECT id FROM public.vendors WHERE user_id = $1 LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (vRes.rows.length === 0) {
@@ -195,7 +215,7 @@ class OrdersService {
       WHERE o.vendor_id = $1
       ORDER BY o.created_at DESC
       `,
-      [vendorId]
+      [vendorId],
     );
 
     return result.rows;
@@ -216,7 +236,7 @@ class OrdersService {
       FROM public.orders o
       LEFT JOIN public.users u ON u.id = o.customer_id
       ORDER BY o.created_at DESC
-      `
+      `,
     );
 
     return result.rows;
@@ -228,9 +248,17 @@ class OrdersService {
   // =========================================
 
   async updateOrderStatus(orderId, status) {
-    const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+    const validStatuses = [
+      'pending',
+      'confirmed',
+      'shipped',
+      'delivered',
+      'cancelled',
+    ];
     if (!validStatuses.includes(status)) {
-      throw new BadRequestException(`Status must be one of: ${validStatuses.join(', ')}`);
+      throw new BadRequestException(
+        `Status must be one of: ${validStatuses.join(', ')}`,
+      );
     }
 
     const result = await this.databaseService.query(
@@ -240,7 +268,7 @@ class OrdersService {
       WHERE id = $2
       RETURNING *
       `,
-      [status, Number(orderId)]
+      [status, Number(orderId)],
     );
 
     if (result.rows.length === 0) {

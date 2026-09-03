@@ -20,10 +20,11 @@ export default function Navbar() {
         const currentUser = await getCurrentUser();
         if (currentUser && currentUser.id) {
           setUser(currentUser);
+          window.dispatchEvent(new Event('auth:login'));
         } else {
           setUser(null);
         }
-      } catch (err) {
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);

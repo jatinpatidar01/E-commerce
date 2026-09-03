@@ -88,7 +88,11 @@ class AdminController {
     }
 
     const adminUserId = req.user?.id || null;
-    return this.adminService.updateProductApproval(id, approval_status, adminUserId);
+    return this.adminService.updateProductApproval(
+      id,
+      approval_status,
+      adminUserId,
+    );
   }
 
   // =========================================
@@ -176,7 +180,10 @@ Query()(AdminController.prototype, 'getProducts', 0);
 Patch('products/:id/approval')(
   AdminController.prototype,
   'updateProductApproval',
-  Object.getOwnPropertyDescriptor(AdminController.prototype, 'updateProductApproval'),
+  Object.getOwnPropertyDescriptor(
+    AdminController.prototype,
+    'updateProductApproval',
+  ),
 );
 Param('id')(AdminController.prototype, 'updateProductApproval', 0);
 Body()(AdminController.prototype, 'updateProductApproval', 1);
@@ -186,7 +193,10 @@ Req()(AdminController.prototype, 'updateProductApproval', 2);
 Patch('products/:id/status')(
   AdminController.prototype,
   'toggleProductStatus',
-  Object.getOwnPropertyDescriptor(AdminController.prototype, 'toggleProductStatus'),
+  Object.getOwnPropertyDescriptor(
+    AdminController.prototype,
+    'toggleProductStatus',
+  ),
 );
 Param('id')(AdminController.prototype, 'toggleProductStatus', 0);
 Body()(AdminController.prototype, 'toggleProductStatus', 1);

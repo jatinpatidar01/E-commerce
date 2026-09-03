@@ -105,7 +105,10 @@ Req()(OrdersController.prototype, 'getOrders', 0);
 Get('vendor')(
   OrdersController.prototype,
   'getVendorOrders',
-  Object.getOwnPropertyDescriptor(OrdersController.prototype, 'getVendorOrders'),
+  Object.getOwnPropertyDescriptor(
+    OrdersController.prototype,
+    'getVendorOrders',
+  ),
 );
 Req()(OrdersController.prototype, 'getVendorOrders', 0);
 
@@ -120,7 +123,10 @@ Get('admin')(
 Patch(':id/status')(
   OrdersController.prototype,
   'updateOrderStatus',
-  Object.getOwnPropertyDescriptor(OrdersController.prototype, 'updateOrderStatus'),
+  Object.getOwnPropertyDescriptor(
+    OrdersController.prototype,
+    'updateOrderStatus',
+  ),
 );
 Param('id')(OrdersController.prototype, 'updateOrderStatus', 0);
 Body()(OrdersController.prototype, 'updateOrderStatus', 1);

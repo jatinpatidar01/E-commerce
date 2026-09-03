@@ -41,19 +41,23 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
-  refreshCart();
+    const clearCartState = () => {
+      setCart(emptyCart);
+      setCartBadge(0);
+    };
 
-  const handleAuthChange = () => {
-    setCart(emptyCart);
-    setCartBadge(0);
-  };
+    const handleAuthLogin = () => {
+      refreshCart();
+    };
 
-  window.addEventListener("auth:logout", handleAuthChange);
+    window.addEventListener("auth:login", handleAuthLogin);
+    window.addEventListener("auth:logout", clearCartState);
 
-  return () => {
-    window.removeEventListener("auth:logout", handleAuthChange);
-  };
-}, [refreshCart]);
+    return () => {
+      window.removeEventListener("auth:login", handleAuthLogin);
+      window.removeEventListener("auth:logout", clearCartState);
+    };
+  }, [refreshCart]);
 
   const addToCart = async (productId, quantity = 1) => {
     setLoading(true);

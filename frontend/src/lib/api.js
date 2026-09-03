@@ -12,8 +12,17 @@ async function request(endpoint, options = {}) {
     retry = true,
   } = options;
 
+  const fullUrl = `${API_URL}${endpoint}`;
+
+  console.log("API request:", {
+    fullUrl,
+    method,
+    body,
+    headers,
+  });
+
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(fullUrl, {
       method,
       credentials: "include",
       headers: {
@@ -24,6 +33,8 @@ async function request(endpoint, options = {}) {
       },
       body: body ? JSON.stringify(body) : undefined,
     });
+
+    console.log("API response status:", response.status, response.statusText);
 
     let data = null;
 
@@ -75,6 +86,8 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
+    console.error("API request failed:", error);
+
     if (error instanceof TypeError) {
       const connError = new Error("Unable to connect to server");
       connError.status = 503;

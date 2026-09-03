@@ -59,11 +59,18 @@ Req()(CustomerController.prototype, 'getProfile', 0);
 Patch('profile')(
   CustomerController.prototype,
   'updateProfile',
-  Object.getOwnPropertyDescriptor(CustomerController.prototype, 'updateProfile'),
+  Object.getOwnPropertyDescriptor(
+    CustomerController.prototype,
+    'updateProfile',
+  ),
 );
 Body()(CustomerController.prototype, 'updateProfile', 0);
 Req()(CustomerController.prototype, 'updateProfile', 1);
 
-Reflect.defineMetadata('design:paramtypes', [CustomerService], CustomerController);
+Reflect.defineMetadata(
+  'design:paramtypes',
+  [CustomerService],
+  CustomerController,
+);
 
 module.exports = { CustomerController };

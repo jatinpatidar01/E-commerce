@@ -66,7 +66,10 @@ class CartService {
         categoryName: item.category_name,
         vendorId: item.vendor_id,
         vendorName: item.vendor_name,
-        isAvailable: item.is_active && item.approval_status === 'approved' && item.stock > 0,
+        isAvailable:
+          item.is_active &&
+          item.approval_status === 'approved' &&
+          item.stock > 0,
         subtotal,
       };
     });

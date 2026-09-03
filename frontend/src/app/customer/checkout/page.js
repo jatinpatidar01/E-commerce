@@ -40,7 +40,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!formData.fullName || !formData.phone || !formData.street || !formData.city || !formData.pincode) {
+    if (
+      !formData.fullName ||
+      !formData.phone ||
+      !formData.street ||
+      !formData.city ||
+      !formData.pincode
+    ) {
       setError("Please fill in all required shipping address fields.");
       return;
     }
@@ -59,14 +65,40 @@ export default function CheckoutPage() {
         shipping_address: fullAddress,
       };
 
+      console.log("Checkout payload before API call:", payload);
+
       const result = await orderService.checkout(payload);
+      
+      console.log("Checkout result:", result);
+      // console.log("Razorpay:", window.Razorpay);
+      console.log("Razorpay amount:", result.razorpayOrder.amount);
+      // console.log("Razorpay key:", process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
+      const options = {
+  key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+  amount:1,
+  currency: result.razorpayOrder.currency,
+  order_id: result.razorpayOrder.id,
+
+  name: "My Ecommerce",
+  description: "Order Payment",
+
+  handler: function (response) {
+    console.log("Razorpay payment response:", response);
+  },
+     }; 
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
 
       setPlacedOrders(result?.orders || []);
       setOrderPlaced(true);
       await refreshCart();
     } catch (err) {
       console.error("Checkout failed:", err);
-      setError(err?.message || "Failed to place order. Please make sure you are logged in.");
+      setError(
+        err?.message ||
+          "Failed to place order. Please make sure you are logged in.",
+      );
     } finally {
       setLoading(false);
     }
@@ -82,15 +114,24 @@ export default function CheckoutPage() {
           Order Placed Successfully!
         </h1>
         <p className="text-sm text-gray-500 mt-2">
-          Thank you for your purchase. We have received your order and notified the vendors.
+          Thank you for your purchase. We have received your order and notified
+          the vendors.
         </p>
 
         <div className="my-6 p-4 bg-gray-50 rounded-2xl text-left border text-xs space-y-2">
           <p className="font-bold text-gray-700">Order Summary:</p>
-          <p className="text-gray-600">Total Items: {placedOrders.length || items.length}</p>
-          <p className="text-gray-600 font-bold">Total Amount Paid: ₹{totalAmount.toLocaleString("en-IN")}</p>
-          <p className="text-gray-600">Payment: {formData.paymentMethod.toUpperCase()}</p>
-          <p className="text-gray-600">Delivery Address: {formData.street}, {formData.city}</p>
+          <p className="text-gray-600">
+            Total Items: {placedOrders.length || items.length}
+          </p>
+          <p className="text-gray-600 font-bold">
+            Total Amount Paid: ₹{totalAmount.toLocaleString("en-IN")}
+          </p>
+          <p className="text-gray-600">
+            Payment: {formData.paymentMethod.toUpperCase()}
+          </p>
+          <p className="text-gray-600">
+            Delivery Address: {formData.street}, {formData.city}
+          </p>
         </div>
 
         <div className="flex items-center justify-center gap-4 pt-2">
@@ -130,7 +171,10 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <form
+        onSubmit={handlePlaceOrder}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"
+      >
         {/* SHIPPING & PAYMENT FORM */}
         <div className="lg:col-span-2 space-y-6">
           {/* 1. SHIPPING ADDRESS */}
@@ -141,7 +185,9 @@ export default function CheckoutPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Full Name *
+                </label>
                 <input
                   type="text"
                   name="fullName"
@@ -154,7 +200,9 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Phone Number *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Phone Number *
+                </label>
                 <input
                   type="tel"
                   name="phone"
@@ -167,7 +215,9 @@ export default function CheckoutPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 mb-1">Street / House / Apartment *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Street / House / Apartment *
+                </label>
                 <input
                   type="text"
                   name="street"
@@ -180,7 +230,9 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">City *</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  City *
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -194,7 +246,9 @@ export default function CheckoutPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">State</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    State
+                  </label>
                   <input
                     type="text"
                     name="state"
@@ -205,7 +259,9 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">PIN Code *</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    PIN Code *
+                  </label>
                   <input
                     type="text"
                     name="pincode"
@@ -243,7 +299,9 @@ export default function CheckoutPage() {
                   className="accent-[#5c4ce1]"
                 />
                 <div>
-                  <p className="text-xs font-bold text-gray-900">Cash on Delivery</p>
+                  <p className="text-xs font-bold text-gray-900">
+                    Cash on Delivery
+                  </p>
                   <p className="text-[10px] text-gray-400">Pay upon delivery</p>
                 </div>
               </label>
@@ -264,8 +322,12 @@ export default function CheckoutPage() {
                   className="accent-[#5c4ce1]"
                 />
                 <div>
-                  <p className="text-xs font-bold text-gray-900">UPI / QR Code</p>
-                  <p className="text-[10px] text-gray-400">GPay, PhonePe, Paytm</p>
+                  <p className="text-xs font-bold text-gray-900">
+                    UPI / QR Code
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    GPay, PhonePe, Paytm
+                  </p>
                 </div>
               </label>
 
@@ -285,8 +347,12 @@ export default function CheckoutPage() {
                   className="accent-[#5c4ce1]"
                 />
                 <div>
-                  <p className="text-xs font-bold text-gray-900">Credit / Debit Card</p>
-                  <p className="text-[10px] text-gray-400">Visa, Mastercard, RuPay</p>
+                  <p className="text-xs font-bold text-gray-900">
+                    Credit / Debit Card
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    Visa, Mastercard, RuPay
+                  </p>
                 </div>
               </label>
             </div>
@@ -301,10 +367,17 @@ export default function CheckoutPage() {
 
           <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
             {items.map((item) => (
-              <div key={item.id} className="flex justify-between items-center text-xs">
+              <div
+                key={item.id}
+                className="flex justify-between items-center text-xs"
+              >
                 <div className="truncate pr-2">
-                  <p className="font-bold text-gray-800 truncate">{item.name}</p>
-                  <p className="text-[10px] text-gray-400">Qty: {item.quantity} · by {item.vendorName || "Vendor"}</p>
+                  <p className="font-bold text-gray-800 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    Qty: {item.quantity} · by {item.vendorName || "Vendor"}
+                  </p>
                 </div>
                 <span className="font-bold text-gray-900 shrink-0">
                   ₹{(item.price * item.quantity).toLocaleString("en-IN")}
@@ -316,7 +389,9 @@ export default function CheckoutPage() {
           <div className="border-t pt-4 space-y-2 text-sm text-gray-600">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span className="font-bold text-gray-900">₹{totalAmount.toLocaleString("en-IN")}</span>
+              <span className="font-bold text-gray-900">
+                ₹{totalAmount.toLocaleString("en-IN")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Delivery</span>
@@ -324,7 +399,9 @@ export default function CheckoutPage() {
             </div>
             <div className="border-t pt-3 flex justify-between text-base font-black text-gray-900">
               <span>Total Payable</span>
-              <span className="text-xl text-[#5c4ce1]">₹{totalAmount.toLocaleString("en-IN")}</span>
+              <span className="text-xl text-[#5c4ce1]">
+                ₹{totalAmount.toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
 
@@ -333,11 +410,14 @@ export default function CheckoutPage() {
             disabled={loading || items.length === 0}
             className="w-full py-4 bg-black hover:bg-gray-800 text-white text-center text-sm font-black rounded-2xl transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? "Placing Order..." : `🛍️ Confirm & Place Order (₹${totalAmount.toLocaleString("en-IN")})`}
+            {loading
+              ? "Placing Order..."
+              : `🛍️ Confirm & Place Order (₹${totalAmount.toLocaleString("en-IN")})`}
           </button>
 
           <p className="text-[10px] text-gray-400 text-center">
-            🔒 By placing your order, you agree to the Terms of Service & Multi-Vendor Policy.
+            🔒 By placing your order, you agree to the Terms of Service &
+            Multi-Vendor Policy.
           </p>
         </div>
       </form>

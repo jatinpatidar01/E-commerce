@@ -43,9 +43,6 @@ class AuthController {
     return this.authService.getOtp({ email });
   }
 
- 
-
-
   // =========================
   // REGISTER
   // POST /auth/register

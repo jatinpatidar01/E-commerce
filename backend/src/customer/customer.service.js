@@ -24,7 +24,7 @@ class CustomerService {
       WHERE id = $1
       LIMIT 1
       `,
-      [userId]
+      [userId],
     );
 
     if (userRes.rows.length === 0) {
@@ -38,19 +38,19 @@ class CustomerService {
       await Promise.all([
         this.databaseService.query(
           `SELECT COUNT(*)::INTEGER AS total, COUNT(CASE WHEN status IN ('pending', 'confirmed', 'shipped') THEN 1 END)::INTEGER AS in_progress FROM public.orders WHERE customer_id = $1`,
-          [userId]
+          [userId],
         ),
         this.databaseService.query(
           `SELECT COALESCE(SUM(total_amount), 0)::NUMERIC AS total_spent FROM public.orders WHERE customer_id = $1 AND status != 'cancelled'`,
-          [userId]
+          [userId],
         ),
         this.databaseService.query(
           `SELECT COALESCE(SUM(quantity), 0)::INTEGER AS total_cart_items FROM public.cart_items WHERE user_id = $1`,
-          [userId]
+          [userId],
         ),
         this.databaseService.query(
           `SELECT id, product_name, total_amount, status, created_at FROM public.orders WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 3`,
-          [userId]
+          [userId],
         ),
       ]);
 
@@ -76,7 +76,7 @@ class CustomerService {
 
     const userRes = await this.databaseService.query(
       `SELECT id FROM public.users WHERE id = $1 LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (userRes.rows.length === 0) {
@@ -97,10 +97,12 @@ class CustomerService {
       // Check if email taken by someone else
       const emailCheck = await this.databaseService.query(
         `SELECT id FROM public.users WHERE LOWER(email) = $1 AND id != $2 LIMIT 1`,
-        [cleanedEmail, userId]
+        [cleanedEmail, userId],
       );
       if (emailCheck.rows.length > 0) {
-        throw new BadRequestException('This email is already registered to another account.');
+        throw new BadRequestException(
+          'This email is already registered to another account.',
+        );
       }
       updates.push(`email = $${paramIndex++}`);
       params.push(cleanedEmail);
@@ -108,7 +110,9 @@ class CustomerService {
 
     if (newPassword && newPassword.trim()) {
       if (newPassword.trim().length < 3) {
-        throw new BadRequestException('New password must be at least 3 characters.');
+        throw new BadRequestException(
+          'New password must be at least 3 characters.',
+        );
       }
       const hashed = await bcrypt.hash(newPassword.trim(), 10);
       updates.push(`password = $${paramIndex++}`);
