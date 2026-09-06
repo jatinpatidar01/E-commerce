@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 import orderService from "@/services/order.service";
+import { paymentService } from "@/services/payment.service";
 
 // Customer orders
 export function useCustomerOrders() {
@@ -68,6 +69,20 @@ export function useUpdateOrderStatus() {
         queryKey: ["vendor-orders"],
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["customer-orders"],
+      });
+    },
+  });
+}
+
+export function useRefundOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (orderId) => paymentService.refund(orderId),
+
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["customer-orders"],
       });

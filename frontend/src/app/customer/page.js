@@ -8,6 +8,7 @@ import productService from "@/services/product.service";
 export default function CustomerHomePage() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
+  const categoryIdParam = searchParams.get("category_id");
 
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
@@ -37,7 +38,7 @@ export default function CustomerHomePage() {
       const params = {
         page: 1,
         limit: 9,
-        category: categoryParam || undefined,
+        category_id: categoryIdParam || undefined,
         search: search || undefined,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
@@ -62,7 +63,7 @@ export default function CustomerHomePage() {
     } finally {
       setInitialLoading(false);
     }
-  }, [categoryParam, search, minPrice, maxPrice]);
+  }, [categoryIdParam, search, minPrice, maxPrice]);
 
   useEffect(() => {
     loadInitialProducts();
@@ -80,7 +81,7 @@ export default function CustomerHomePage() {
       const params = {
         page: nextPage,
         limit: 9,
-        category: categoryParam || undefined,
+        category_id: categoryIdParam || undefined,
         search: search || undefined,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,

@@ -1,0 +1,12 @@
+BEGIN;
+
+ALTER TABLE public.products
+ADD COLUMN IF NOT EXISTS return_window_days INTEGER NOT NULL DEFAULT 7;
+
+ALTER TABLE public.orders
+ADD COLUMN IF NOT EXISTS return_window_days INTEGER NOT NULL DEFAULT 7;
+
+ALTER TABLE public.orders
+ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP;
+
+COMMIT;

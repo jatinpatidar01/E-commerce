@@ -15,8 +15,19 @@ class ProductsService {
   // GET PUBLIC PRODUCTS (FOR CUSTOMERS)
 
   async getPublicProducts(query = {}) {
-    const page = Math.max(1, parseInt(query.page, 10) || 1);
-    const limit = Math.max(1, Math.min(50, parseInt(query.limit, 10) || 9));
+    const pageValue = query.page === undefined ? '1' : String(query.page).trim();
+    const limitValue = query.limit === undefined ? '9' : String(query.limit).trim();
+
+    if (!/^\d+$/.test(pageValue) || Number(pageValue) < 1) {
+      throw new BadRequestException('Page must be a positive integer');
+    }
+
+    if (!/^\d+$/.test(limitValue) || Number(limitValue) < 1 || Number(limitValue) > 50) {
+      throw new BadRequestException('Limit must be an integer between 1 and 50');
+    }
+
+    const page = Number(pageValue);
+    const limit = Number(limitValue);
     const offset = (page - 1) * limit;
 
     const { category, category_id, search, minPrice, maxPrice, sort } = query;
@@ -25,9 +36,25 @@ class ProductsService {
     const params = [];
     let paramIndex = 1;
 
-    if (category_id) {
+    const categoryIdValue =
+      category_id === undefined ? '' : String(category_id).trim();
+
+    if (categoryIdValue) {
+      if (!/^\d+$/.test(categoryIdValue) || Number(categoryIdValue) < 1) {
+        throw new BadRequestException('Category ID must be a positive integer');
+      }
+
+      const categoryResult = await this.databaseService.query(
+        'SELECT id FROM public.categories WHERE id = $1 LIMIT 1',
+        [Number(categoryIdValue)],
+      );
+
+      if (categoryResult.rows.length === 0) {
+        throw new NotFoundException('Category not found');
+      }
+
       conditions.push(`p.category_id = $${paramIndex++}`);
-      params.push(Number(category_id));
+      params.push(Number(categoryIdValue));
     } else if (
       category &&
       category.trim() &&

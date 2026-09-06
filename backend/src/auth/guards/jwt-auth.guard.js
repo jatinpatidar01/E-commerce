@@ -30,9 +30,39 @@ class JwtAuthGuard {
     this.authService = authService;
   }
 
+  // canActivate(context) {
+  //   const request = context.switchToHttp().getRequest();
+  //   const token = extractToken(request);
+
+  //   if (!token) {
+  //     throw new UnauthorizedException('Missing access token');
+  //   }
+
+  //   try {
+  //     const decoded = this.authService.validateAccessToken(token);
+  //     request.user = {
+  //       id:
+  //         Number(decoded.sub) ||
+  //         (decoded.sub !== undefined
+  //           ? decoded.sub
+  //           : Number(decoded.id) || decoded.id),
+  //       sub: decoded.sub,
+  //       email: decoded.email,
+  //       role: decoded.role,
+  //     };
+  //     return true;
+  //   } catch {
+  //     throw new UnauthorizedException('Invalid or expired access token');
+  //   }
+  // }
   canActivate(context) {
     const request = context.switchToHttp().getRequest();
+
+    console.log('JWT GUARD RUNNING');
+
     const token = extractToken(request);
+
+    console.log('TOKEN EXISTS:', !!token);
 
     if (!token) {
       throw new UnauthorizedException('Missing access token');
@@ -40,6 +70,9 @@ class JwtAuthGuard {
 
     try {
       const decoded = this.authService.validateAccessToken(token);
+
+      console.log('DECODED TOKEN:', decoded);
+
       request.user = {
         id:
           Number(decoded.sub) ||
@@ -50,6 +83,9 @@ class JwtAuthGuard {
         email: decoded.email,
         role: decoded.role,
       };
+
+      console.log('REQUEST USER:', request.user);
+
       return true;
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');

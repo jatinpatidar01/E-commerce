@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCustomerOrders } from "@/hooks/useOrders";
+import { useState } from "react";
+import { useCustomerOrders, useRefundOrder } from "@/hooks/useOrders";
 
 const STATUS_BADGES = {
   pending: {
@@ -27,15 +28,22 @@ const STATUS_BADGES = {
 };
 
 export default function CustomerOrdersPage() {
-  const {
-    data,
-    isLoading,
-    error,
-  } = useCustomerOrders();
+  const { data, isLoading, error } = useCustomerOrders();
+  const refundOrder = useRefundOrder();
+  const [refundMessage, setRefundMessage] = useState("");
 
-  const orders = Array.isArray(data)
-    ? data
-    : data?.orders || [];
+  const orders = Array.isArray(data) ? data : data?.orders || [];
+
+  const handleRefund = async (orderId) => {
+    setRefundMessage("");
+
+    try {
+      await refundOrder.mutateAsync(orderId);
+      setRefundMessage("Refund successful.");
+    } catch (refundError) {
+      setRefundMessage(refundError.message || "Refund failed.");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -103,20 +111,29 @@ export default function CustomerOrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
+            const refundDeadline = new Date(order.payment_confirmed_at);
+
+            refundDeadline.setDate(
+              refundDeadline.getDate() + Number(order.return_window_days),
+            );
+
+            const refundWindowExpired = new Date() > refundDeadline;
+
             const statusConfig = STATUS_BADGES[order.status] || {
               label: order.status,
               bg: "bg-gray-50 text-gray-700 border-gray-200",
             };
 
-            const orderDate = new Date(
-              order.created_at
-            ).toLocaleDateString("en-IN", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+            const orderDate = new Date(order.created_at).toLocaleDateString(
+              "en-IN",
+              {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              },
+            );
 
             return (
               <div
@@ -135,9 +152,7 @@ export default function CustomerOrdersPage() {
                         Order #{order.id}
                       </span>
 
-                      <span className="text-[10px] text-gray-300">
-                        •
-                      </span>
+                      <span className="text-[10px] text-gray-300">•</span>
 
                       <span className="text-[11px] text-gray-400">
                         {orderDate}
@@ -160,9 +175,9 @@ export default function CustomerOrdersPage() {
                         Unit Price:{" "}
                         <strong className="text-gray-800">
                           ₹
-                          {Number(
-                            order.unit_price || 0
-                          ).toLocaleString("en-IN")}
+                          {Number(order.unit_price || 0).toLocaleString(
+                            "en-IN",
+                          )}
                         </strong>
                       </span>
 
@@ -181,15 +196,10 @@ export default function CustomerOrdersPage() {
                 {/* Total & Status */}
                 <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                   <div className="text-right">
-                    <p className="text-xs text-gray-400">
-                      Total Paid
-                    </p>
+                    <p className="text-xs text-gray-400">Total Paid</p>
 
                     <p className="text-base font-black text-gray-900">
-                      ₹
-                      {Number(
-                        order.total_amount || 0
-                      ).toLocaleString("en-IN")}
+                      ₹{Number(order.total_amount || 0).toLocaleString("en-IN")}
                     </p>
                   </div>
 
@@ -198,6 +208,59 @@ export default function CustomerOrdersPage() {
                   >
                     {statusConfig.label}
                   </span>
+
+          {order.payment_status === "paid" &&
+  order.refund_status === "processed" && (
+    <button
+      type="button"
+      disabled
+      className="px-3 py-1 text-xs font-bold rounded-full border border-green-200 text-green-700 bg-green-50 opacity-70"
+    >
+      Refund Processed
+    </button>
+  )}
+
+{order.payment_status === "paid" &&
+  order.refund_status === "not_refunded" && (
+    <button
+      type="button"
+      onClick={() => {
+        if (!refundWindowExpired) {
+          handleRefund(order.id);
+        }
+      }}
+      disabled={refundWindowExpired || refundOrder.isPending}
+      className="px-3 py-1 text-xs font-bold rounded-full border border-red-200 text-red-700 bg-red-50 disabled:opacity-50"
+    >
+      {refundOrder.isPending && refundOrder.variables === order.id
+        ? "Processing..."
+        : refundWindowExpired
+          ? "Refund Expired"
+          : "Refund"}
+    </button>
+  )}
+
+{order.payment_status === "paid" &&
+  order.refund_status === "processing" && (
+    <button
+      type="button"
+      disabled
+      className="px-3 py-1 text-xs font-bold rounded-full border border-yellow-200 text-yellow-700 bg-yellow-50"
+    >
+      Refund Processing
+    </button>
+  )}
+
+{order.payment_status === "paid" &&
+  order.refund_status === "processed" && (
+    <button
+      type="button"
+      disabled
+      className="px-3 py-1 text-xs font-bold rounded-full border border-green-200 text-green-700 bg-green-50"
+    >
+      Refund Processed
+    </button>
+  )}
                 </div>
               </div>
             );

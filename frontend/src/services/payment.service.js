@@ -1,22 +1,21 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
+import api from "@/lib/api";
 export const paymentService = {
   async createOrder(amount) {
-    const response = await fetch(`${API_URL}/payments/create-order`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ amount }),
-    });
+    return api.post("/payments/create-order", { amount });
+  },
 
-    const data = await response.json();
+  async refund(orderId) {
+    console.log("Refund request:", { orderId });
 
-    if (!response.ok) {
-      throw new Error(data?.message || 'Failed to create payment order');
+    try {
+      const data = await api.post("/payments/refund", { orderId });
+
+      console.log("Refund successful response:", data);
+
+      return data;
+    } catch (error) {
+      console.error("Refund failed:", error);
+      throw error;
     }
-
-    return data;
   },
 };

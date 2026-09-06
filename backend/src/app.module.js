@@ -11,7 +11,7 @@ const { OrdersModule } = require('./orders/orders.module');
 const { DatabaseModule } = require('./database/database.module');
 const { AppController } = require('./app.controller');
 const { PaymentsModule} = require('./payments/payment.module');
-
+const { RazorpayWebhookModule } = require('./webhook/razorpay-webhook.module');
 
 class AppModule {}
 
@@ -28,6 +28,7 @@ Module({
     OrdersModule,
     DatabaseModule,
     PaymentsModule,
+    RazorpayWebhookModule,
 
   ],
 })(AppModule);

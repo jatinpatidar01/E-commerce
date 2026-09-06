@@ -21,12 +21,35 @@ class OrdersService {
 
     let orderItems = [];
 
-    // If items not provided, load from user's active cart
+    // Load items from cart if items are not provided
     if (!items || items.length === 0) {
       const cartQuery = `
+      SELECT
+        c.product_id,
+        c.quantity,
+        p.name AS product_name,
+        p.price AS unit_price,
+        p.stock,
+        p.approval_status,
+        p.is_active,
+        v.id AS vendor_id,
+        v.business_name AS vendor_name
+      FROM public.cart_items c
+      JOIN public.products p ON p.id = c.product_id
+      LEFT JOIN public.vendors v ON v.id = p.vendor_id
+      WHERE c.user_id = $1
+    `;
+
+      const cartRes = await this.databaseService.query(cartQuery, [customerId]);
+
+      orderItems = cartRes.rows;
+    } else {
+      // Load products from request items
+      for (const item of items) {
+        const prodRes = await this.databaseService.query(
+          `
         SELECT
-          c.product_id,
-          c.quantity,
+          p.id AS product_id,
           p.name AS product_name,
           p.price AS unit_price,
           p.stock,
@@ -34,32 +57,14 @@ class OrdersService {
           p.is_active,
           v.id AS vendor_id,
           v.business_name AS vendor_name
-        FROM public.cart_items c
-        JOIN public.products p ON p.id = c.product_id
+        FROM public.products p
         LEFT JOIN public.vendors v ON v.id = p.vendor_id
-        WHERE c.user_id = $1
-      `;
-      const cartRes = await this.databaseService.query(cartQuery, [customerId]);
-      orderItems = cartRes.rows;
-    } else {
-      for (const item of items) {
-        const prodRes = await this.databaseService.query(
-          `
-          SELECT
-            p.id AS product_id,
-            p.name AS product_name,
-            p.price AS unit_price,
-            p.stock,
-            p.approval_status,
-            p.is_active,
-            v.id AS vendor_id,
-            v.business_name AS vendor_name
-          FROM public.products p
-          LEFT JOIN public.vendors v ON v.id = p.vendor_id
-          WHERE p.id = $1 LIMIT 1
-          `,
+        WHERE p.id = $1
+        LIMIT 1
+        `,
           [item.productId || item.product_id],
         );
+
         if (prodRes.rows.length > 0) {
           orderItems.push({
             ...prodRes.rows[0],
@@ -69,19 +74,21 @@ class OrdersService {
       }
     }
 
+    // Cart/order items are empty
     if (orderItems.length === 0) {
       throw new BadRequestException(
         'Your cart is empty. Please add items to checkout.',
       );
     }
 
-    // Verify availability and stock
+    // Check product availability and stock
     for (const item of orderItems) {
       if (!item.is_active || item.approval_status !== 'approved') {
         throw new BadRequestException(
           `Product "${item.product_name}" is currently unavailable.`,
         );
       }
+
       if (item.stock < item.quantity) {
         throw new BadRequestException(
           `Insufficient stock for "${item.product_name}". Only ${item.stock} available.`,
@@ -91,32 +98,53 @@ class OrdersService {
 
     const createdOrders = [];
     let grandTotal = 0;
-    let amount = 0;
-    // Create order records preserving snapshot details
+
+    for (const item of orderItems) {
+      const qty = item.quantity;
+      const unitPrice = Number(item.unit_price);
+
+      const totalAmount = unitPrice * qty;
+
+      grandTotal += totalAmount;
+    }
+
+    console.log('Grand total:', grandTotal);
+    // Create pending orders
+    const razorpayAmount = 100;
+    console.log('Razorpay amount:', razorpayAmount, 'paise (₹1)');
+
+    // const razorpayOrder = await this.paymentsService.createOrder(
+    //   razorpayAmount,
+    //   { notes: { customer_id: String(customerId) } },
+    // );
+    const razorpayOrder =
+      await this.paymentsService.createOrder(razorpayAmount);
+
     for (const item of orderItems) {
       const qty = item.quantity;
       const unitPrice = Number(item.unit_price);
       const totalAmount = unitPrice * qty;
-      grandTotal += totalAmount;
 
       const orderRes = await this.databaseService.query(
         `
-        INSERT INTO public.orders
-        (
-          customer_id,
-          vendor_id,
-          vendor_name,
-          total_amount,
-          status,
-          product_id,
-          product_name,
-          unit_price,
-          quantity,
-          shipping_address
-        )
-        VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9)
-        RETURNING *
-        `,
+      INSERT INTO public.orders
+      (
+        customer_id,
+        vendor_id,
+        vendor_name,
+        total_amount,
+        status,
+        product_id,
+        product_name,
+        unit_price,
+        quantity,
+        shipping_address,
+        razorpay_order_id
+      )
+      VALUES
+      ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10)
+      RETURNING *
+      `,
         [
           customerId,
           item.vendor_id || null,
@@ -127,38 +155,24 @@ class OrdersService {
           unitPrice,
           qty,
           shipping_address || 'Standard Delivery Address',
+          razorpayOrder ? razorpayOrder.id : null,
         ],
-      );
-      //  console.log('Order created:', orderRes.rows[0]);
-      //  console.log('Order item details:',  qty, unitPrice, totalAmount);
-      // const totalAmount = unitPrice;
-      amount = amount +unitPrice * 100; 
-      amount= 100;
-      // Convert to paise for Razorpay
-      // Decrement product stock
-      // console.log('Creating Razorpay order for amount:', amount);
-
-      await this.databaseService.query(
-        `UPDATE public.products SET stock = GREATEST(0, stock - $1) WHERE id = $2`,
-        [qty, item.product_id],
       );
 
       createdOrders.push(orderRes.rows[0]);
     }
-    console.log('Total amount for Razorpay order:', amount);
-   const razorpayOrder = await this.paymentsService.createOrder(amount);
 
-    // Clear customer cart
-    await this.databaseService.query(
-      `DELETE FROM public.cart_items WHERE user_id = $1`,
-      [customerId],
-    );
+    // For now Razorpay amount is fixed to ₹1 = 100 paise
 
+    // Create Razorpay order
+
+    // Save Razorpay order ID in our database
     return {
       razorpayOrder,
-      message: 'Order placed successfully',
+      message: 'Order created successfully',
       orders: createdOrders,
       totalAmount: grandTotal,
+      razorpayAmount: razorpayAmount,
       orderCount: createdOrders.length,
     };
   }
@@ -182,7 +196,7 @@ class OrdersService {
       `,
       [customerId],
     );
-
+     console.log('Customer orders:', result.rows);
     return result.rows;
   }
 

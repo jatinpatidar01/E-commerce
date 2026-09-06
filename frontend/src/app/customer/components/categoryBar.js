@@ -7,7 +7,7 @@ import vendorService from '@/services/vendor.service';
 export default function CategoryBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeCategory = searchParams.get('category') || 'All Categories';
+  const activeCategoryId = searchParams.get('category_id');
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +29,13 @@ export default function CategoryBar() {
     loadCategories();
   }, []);
 
-  const handleCategorySelect = (categoryName) => {
-    if (categoryName === 'All Categories') {
+  const handleCategorySelect = (category) => {
+    if (!category) {
       router.push('/customer');
     } else {
-      router.push(`/customer?category=${encodeURIComponent(categoryName)}`);
+      router.push(
+        `/customer?category_id=${category.id}&category=${encodeURIComponent(category.name)}`,
+      );
     }
   };
 
@@ -41,9 +43,9 @@ export default function CategoryBar() {
     <div className="px-6 py-3 border-b border-gray-100 bg-white overflow-x-auto flex items-center gap-2 scrollbar-none">
       <button
         type="button"
-        onClick={() => handleCategorySelect('All Categories')}
+        onClick={() => handleCategorySelect(null)}
         className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
-          activeCategory === 'All Categories'
+          !activeCategoryId
             ? 'bg-[#5c4ce1] text-white shadow-sm'
             : 'bg-gray-100/90 text-gray-600 hover:bg-gray-200'
         }`}
@@ -52,13 +54,13 @@ export default function CategoryBar() {
       </button>
 
       {categories.map((cat) => {
-        const isActive = activeCategory === cat.name;
+        const isActive = String(cat.id) === activeCategoryId;
 
         return (
           <button
             key={cat.id}
             type="button"
-            onClick={() => handleCategorySelect(cat.name)}
+            onClick={() => handleCategorySelect(cat)}
             className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
               isActive
                 ? 'bg-[#5c4ce1] text-white shadow-sm'
