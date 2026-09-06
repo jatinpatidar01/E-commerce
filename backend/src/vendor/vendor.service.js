@@ -2,6 +2,7 @@ const {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } = require('@nestjs/common');
 
 const { DatabaseService } = require('../database/database.service');
@@ -99,7 +100,17 @@ class VendorService {
   // =========================================
 
   async updateProfile(userId, updateData) {
-    const { businessName } = updateData;
+    const businessName = String(updateData?.businessName || '').trim();
+
+    if (!businessName) {
+      throw new BadRequestException('Business name is required');
+    }
+
+    if (businessName.length > 255) {
+      throw new BadRequestException(
+        'Business name must be 255 characters or fewer',
+      );
+    }
 
     const vendor = await this.getVendorByUserId(userId);
 
@@ -117,7 +128,30 @@ class VendorService {
       [businessName, vendor.id],
     );
 
-    return result.rows[0];
+    const userResult = await this.databaseService.query(
+      `
+      SELECT name, email, role, created_at
+      FROM public.users
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [userId],
+    );
+
+    const user = userResult.rows[0];
+
+    return {
+      id: result.rows[0].id,
+      userId: result.rows[0].user_id,
+      businessName: result.rows[0].business_name,
+      createdAt: result.rows[0].created_at,
+      user: {
+        name: user?.name,
+        email: user?.email,
+        role: user?.role,
+        createdAt: user?.created_at,
+      },
+    };
   }
 
   // =========================================

@@ -69,6 +69,14 @@ class ProductsController {
   }
 
   // =========================================
+  // GET /products/search (PUBLIC - FOR CUSTOMERS)
+  // =========================================
+
+  searchProducts(query) {
+    return this.productsService.searchProducts(query);
+  }
+
+  // =========================================
   // GET /products/vendor (VENDOR)
   // =========================================
 
@@ -104,7 +112,8 @@ class ProductsController {
   // =========================================
 
   createProduct(body, req) {
-    const { name, category_id, price, description, stock } = body || {};
+    const { name, category_id, price, description, stock, return_window_days } =
+      body || {};
 
     if (!name || !category_id || price === undefined) {
       throw new BadRequestException(
@@ -126,6 +135,7 @@ class ProductsController {
       category_id: Number(category_id),
       price: Number(price),
       stock: Number(stock || 0),
+      return_window_days,
     });
   }
 
@@ -237,6 +247,17 @@ Get()(
   ),
 );
 Query()(ProductsController.prototype, 'getPublicProducts', 0);
+
+// GET /products/search (PUBLIC)
+Get('search')(
+  ProductsController.prototype,
+  'searchProducts',
+  Object.getOwnPropertyDescriptor(
+    ProductsController.prototype,
+    'searchProducts',
+  ),
+);
+Query()(ProductsController.prototype, 'searchProducts', 0);
 
 // GET /products/vendor
 Get('vendor')(

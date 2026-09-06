@@ -28,7 +28,7 @@ class PaymentsService {
     if (!orderId) {
       throw new BadRequestException('Order ID is required');
     }
-    console.log('Order ID is required');  
+    console.log('Order ID is required');
 
     const orderResult = await this.databaseService.query(
       `

@@ -3,6 +3,7 @@ const {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
 } = require('@nestjs/common');
 
 const { DatabaseService } = require('../database/database.service');
@@ -15,15 +16,23 @@ class ProductsService {
   // GET PUBLIC PRODUCTS (FOR CUSTOMERS)
 
   async getPublicProducts(query = {}) {
-    const pageValue = query.page === undefined ? '1' : String(query.page).trim();
-    const limitValue = query.limit === undefined ? '9' : String(query.limit).trim();
+    const pageValue =
+      query.page === undefined ? '1' : String(query.page).trim();
+    const limitValue =
+      query.limit === undefined ? '9' : String(query.limit).trim();
 
     if (!/^\d+$/.test(pageValue) || Number(pageValue) < 1) {
       throw new BadRequestException('Page must be a positive integer');
     }
 
-    if (!/^\d+$/.test(limitValue) || Number(limitValue) < 1 || Number(limitValue) > 50) {
-      throw new BadRequestException('Limit must be an integer between 1 and 50');
+    if (
+      !/^\d+$/.test(limitValue) ||
+      Number(limitValue) < 1 ||
+      Number(limitValue) > 50
+    ) {
+      throw new BadRequestException(
+        'Limit must be an integer between 1 and 50',
+      );
     }
 
     const page = Number(pageValue);
@@ -142,6 +151,127 @@ class ProductsService {
     };
   }
 
+  // GET PUBLIC PRODUCTS BY NAME
+
+  async searchProducts(query = {}) {
+    const searchValue =
+      query.search === undefined ? '' : String(query.search).trim();
+    const pageValue =
+      query.page === undefined ? '1' : String(query.page).trim();
+    const limitValue =
+      query.limit === undefined ? '9' : String(query.limit).trim();
+
+    try {
+      if (!searchValue) {
+        throw new BadRequestException('Search text is required');
+      }
+
+      if (!/^\d+$/.test(pageValue) || Number(pageValue) < 1) {
+        throw new BadRequestException('Page must be a positive integer');
+      }
+
+      if (limitValue !== '9') {
+        throw new BadRequestException('Limit must be 9');
+      }
+
+      const page = Number(pageValue);
+      const limit = 9;
+      const offset = (page - 1) * limit;
+      const conditions = [
+        'p.is_active = true',
+        "p.approval_status = 'approved'",
+        'p.name ILIKE $1',
+      ];
+      const params = [`%${searchValue}%`];
+      let paramIndex = 2;
+      const categoryIdValue =
+        query.category_id === undefined ? '' : String(query.category_id).trim();
+
+      if (categoryIdValue) {
+        if (!/^\d+$/.test(categoryIdValue) || Number(categoryIdValue) < 1) {
+          throw new BadRequestException(
+            'Category ID must be a positive integer',
+          );
+        }
+
+        const categoryResult = await this.databaseService.query(
+          'SELECT id FROM public.categories WHERE id = $1 LIMIT 1',
+          [Number(categoryIdValue)],
+        );
+
+        if (categoryResult.rows.length === 0) {
+          throw new NotFoundException('Category not found');
+        }
+
+        conditions.push(`p.category_id = $${paramIndex++}`);
+        params.push(Number(categoryIdValue));
+      }
+
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
+      const countQuery = `
+      SELECT COUNT(*)::INTEGER AS total
+      FROM public.products p
+      ${whereClause}
+    `;
+      const countResult = await this.databaseService.query(countQuery, params);
+      const total = Number(countResult.rows[0]?.total || 0);
+      const limitParamIndex = paramIndex++;
+      const offsetParamIndex = paramIndex++;
+
+      const dataQuery = `
+      SELECT
+        p.id,
+        p.vendor_id,
+        v.business_name AS vendor_name,
+        p.category_id,
+        c.name AS category_name,
+        p.name,
+        p.description,
+        p.price,
+        p.stock,
+        p.approval_status,
+        p.is_active,
+        p.created_at,
+        p.updated_at
+      FROM public.products p
+      LEFT JOIN public.categories c ON c.id = p.category_id
+      LEFT JOIN public.vendors v ON v.id = p.vendor_id
+      ${whereClause}
+      ORDER BY p.created_at DESC
+      LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
+    `;
+      const dataResult = await this.databaseService.query(dataQuery, [
+        ...params,
+        limit,
+        offset,
+      ]);
+      const totalPages = Math.ceil(total / limit) || 1;
+
+      return {
+        products: dataResult.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      console.error('Failed to search public products:', error);
+      throw new InternalServerErrorException(
+        'Unable to search products at this time',
+      );
+    }
+  }
+
   // =========================================
   // GET VENDOR ID
   // =========================================
@@ -208,6 +338,7 @@ class ProductsService {
           p.approval_status,
           p.approved_by,
           p.approved_at,
+          p.return_window_days,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -245,6 +376,7 @@ class ProductsService {
           p.approval_status,
           p.approved_by,
           p.approved_at,
+          p.return_window_days,
           p.is_active,
           p.created_at,
           p.updated_at
@@ -269,6 +401,7 @@ class ProductsService {
           p.stock,
           p.approval_status,
           p.is_active,
+          p.return_window_days,
           p.created_at,
           p.updated_at
         FROM public.products p
@@ -292,9 +425,21 @@ class ProductsService {
   // CREATE PRODUCT
 
   async createProduct(userId, data) {
-    const vendorId = await this.getVendorId(userId);
+    const { name, description, category_id, price, stock, return_window_days } =
+      data;
 
-    const { name, description, category_id, price, stock } = data;
+    const returnWindowValue = String(return_window_days ?? '').trim();
+    if (
+      !/^\d+$/.test(returnWindowValue) ||
+      Number(returnWindowValue) < 0 ||
+      Number(returnWindowValue) > 7
+    ) {
+      throw new BadRequestException(
+        'Return window must be a whole number from 0 to 7',
+      );
+    }
+
+    const vendorId = await this.getVendorId(userId);
 
     const result = await this.databaseService.query(
       `
@@ -306,6 +451,7 @@ class ProductsService {
           description,
           price,
           stock,
+          return_window_days,
           approval_status,
           is_active
         )
@@ -317,12 +463,21 @@ class ProductsService {
           $4, 
           $5,
           $6,
+          $7,
           'pending',
           true
         )
         RETURNING *
         `,
-      [vendorId, category_id, name, description || '', price, stock || 0],
+      [
+        vendorId,
+        category_id,
+        name,
+        description || '',
+        price,
+        stock || 0,
+        Number(returnWindowValue),
+      ],
     );
 
     return result.rows[0];
@@ -331,7 +486,19 @@ class ProductsService {
   async updateProduct(userId, productId, data) {
     const vendorId = await this.getVendorId(userId);
 
-    const { name, description, category_id, price, stock } = data;
+    const { name, description, category_id, price, stock, return_window_days } =
+      data;
+
+    const returnWindowValue = String(return_window_days ?? '').trim();
+    if (
+      !/^\d+$/.test(returnWindowValue) ||
+      Number(returnWindowValue) < 0 ||
+      Number(returnWindowValue) > 7
+    ) {
+      throw new BadRequestException(
+        'Return window must be a whole number from 0 to 7',
+      );
+    }
 
     const result = await this.databaseService.query(
       `
@@ -342,9 +509,10 @@ class ProductsService {
           category_id = COALESCE($3, category_id),
           price = COALESCE($4, price),
           stock = COALESCE($5, stock),
+          return_window_days = $6,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6
-        AND vendor_id = $7
+        WHERE id = $7
+        AND vendor_id = $8
         RETURNING *
         `,
       [
@@ -353,6 +521,7 @@ class ProductsService {
         category_id ?? null,
         price ?? null,
         stock ?? null,
+        Number(returnWindowValue),
         productId,
         vendorId,
       ],

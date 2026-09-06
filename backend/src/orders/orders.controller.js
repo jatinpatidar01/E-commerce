@@ -62,6 +62,15 @@ class OrdersController {
   }
 
   // =========================================
+  // GET ORDER DETAILS
+  // GET /orders/:id
+  // =========================================
+
+  getOrderDetails(id, req) {
+    return this.ordersService.getOrderDetails(id, req.user);
+  }
+
+  // =========================================
   // PATCH /orders/:id/status
   // =========================================
 
@@ -118,6 +127,18 @@ Get('admin')(
   'getAdminOrders',
   Object.getOwnPropertyDescriptor(OrdersController.prototype, 'getAdminOrders'),
 );
+
+// GET /orders/:id
+Get(':id')(
+  OrdersController.prototype,
+  'getOrderDetails',
+  Object.getOwnPropertyDescriptor(
+    OrdersController.prototype,
+    'getOrderDetails',
+  ),
+);
+Param('id')(OrdersController.prototype, 'getOrderDetails', 0);
+Req()(OrdersController.prototype, 'getOrderDetails', 1);
 
 // PATCH /orders/:id/status
 Patch(':id/status')(

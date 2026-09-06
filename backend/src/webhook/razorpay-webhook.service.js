@@ -103,7 +103,7 @@ class RazorpayWebhookService {
     await this.databaseService.query(
       `
   UPDATE public.products p
-  SET stock_quantity = p.stock_quantity - o.quantity
+  SET stock = p.stock - o.quantity
   FROM public.orders o
   WHERE p.id = o.product_id
     AND o.razorpay_order_id = $1
@@ -148,7 +148,7 @@ class RazorpayWebhookService {
   async handleRefundProcessed(event) {
     const refund = event.payload.refund.entity;
     const refundId = refund.id;
-
+  //  console.log('Refund processed:', refundId);
     await this.databaseService.query(
       `
     UPDATE public.orders
@@ -169,7 +169,7 @@ class RazorpayWebhookService {
       `
     UPDATE public.orders
     SET
-      refund_status = 'failed',
+      refund_status = 'refund_failed',
       updated_at = CURRENT_TIMESTAMP
     WHERE razorpay_refund_id = $1
     `,

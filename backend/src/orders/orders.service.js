@@ -2,6 +2,8 @@ const {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
+  ServiceUnavailableException,
 } = require('@nestjs/common');
 const { DatabaseService } = require('../database/database.service');
 const { PaymentsService } = require('../payments/payment.service');
@@ -223,9 +225,11 @@ class OrdersService {
       SELECT
         o.*,
         u.name AS customer_name,
-        u.email AS customer_email
+        u.email AS customer_email,
+        p.return_window_days AS return_window_days
       FROM public.orders o
       LEFT JOIN public.users u ON u.id = o.customer_id
+      LEFT JOIN public.products p ON p.id = o.product_id
       WHERE o.vendor_id = $1
       ORDER BY o.created_at DESC
       `,
@@ -246,14 +250,91 @@ class OrdersService {
       SELECT
         o.*,
         u.name AS customer_name,
-        u.email AS customer_email
+        u.email AS customer_email,
+        v.business_name AS vendor_name,
+        p.return_window_days AS return_window_days
       FROM public.orders o
       LEFT JOIN public.users u ON u.id = o.customer_id
+      LEFT JOIN public.vendors v ON v.id = o.vendor_id
+      LEFT JOIN public.products p ON p.id = o.product_id
       ORDER BY o.created_at DESC
       `,
     );
 
     return result.rows;
+  }
+
+  // =========================================
+  // GET ORDER DETAILS
+  // GET /orders/:id
+  // =========================================
+
+  async getOrderDetails(orderId, user) {
+    const parsedOrderId = Number(orderId);
+
+    if (!orderId || !Number.isInteger(parsedOrderId) || parsedOrderId <= 0) {
+      throw new BadRequestException('Valid order ID is required');
+    }
+
+    if (!user?.id || !user?.role) {
+      throw new ForbiddenException('You are not allowed to view this order');
+    }
+
+    const role = String(user.role).toLowerCase();
+    if (!['customer', 'vendor', 'admin', 'superadmin'].includes(role)) {
+      throw new ForbiddenException('You are not allowed to view this order');
+    }
+
+    try {
+      const result = await this.databaseService.query(
+        `
+        SELECT
+          o.*,
+          customer.id AS customer_id,
+          customer.name AS customer_name,
+          customer.email AS customer_email,
+          vendor.id AS vendor_id,
+          vendor.user_id AS vendor_user_id,
+          vendor.business_name AS vendor_business_name,
+          product.id AS product_id,
+          product.name AS product_name,
+          product.description AS product_description,
+          product.price AS product_price,
+          product.return_window_days AS return_window_days
+        FROM public.orders o
+        LEFT JOIN public.users customer ON customer.id = o.customer_id
+        LEFT JOIN public.vendors vendor ON vendor.id = o.vendor_id
+        LEFT JOIN public.products product ON product.id = o.product_id
+        WHERE o.id = $1
+          AND (
+            $3 IN ('admin', 'superadmin')
+            OR ($3 = 'customer' AND o.customer_id = $2)
+            OR ($3 = 'vendor' AND vendor.user_id = $2)
+          )
+        LIMIT 1
+        `,
+        [parsedOrderId, Number(user.id), role],
+      );
+
+      if (result.rows.length === 0) {
+        throw new NotFoundException('Order not found');
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      console.error('Failed to load order details:', error);
+      throw new ServiceUnavailableException(
+        'Unable to load order details at this time',
+      );
+    }
   }
 
   // =========================================
